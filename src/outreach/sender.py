@@ -1,46 +1,60 @@
-"""Email sender using SendGrid."""
-import sendgrid
-from sendgrid.helpers.mail import Mail, Email, To, Content, Asm, GroupId
+"""Email sender using Brevo (Sendinblue)."""
+import httpx
 from typing import Dict, Any
-from config.settings import SENDGRID_API_KEY, EMAIL_FROM, EMAIL_FROM_NAME, EMAIL_REPLY_TO
+from config.settings import BREVO_API_KEY, EMAIL_FROM, EMAIL_FROM_NAME, EMAIL_REPLY_TO
 
 
 class EmailSender:
-    """Send emails using SendGrid API."""
+    """Send emails using Brevo API."""
 
     def __init__(self):
-        self.client = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
+        self.api_key = BREVO_API_KEY
+        self.base_url = "https://api.brevo.com/v3"
+        self.headers = {
+            "api-key": self.api_key,
+            "accept": "application/json",
+            "content-type": "application/json"
+        }
 
     async def send_email(
         self,
         to_email: str,
         subject: str,
         html_content: str,
-        plain_content: str = None,
-        unsubscribe_group_id: int = None
+        plain_content: str = None
     ) -> Dict[str, Any]:
         """Send a single email."""
-        message = Mail(
-            from_email=Email(EMAIL_FROM, EMAIL_FROM_NAME),
-            to_emails=To(to_email),
-            subject=subject,
-            html_content=Content("text/html", html_content),
-            plain_text_content=Content("text/plain", plain_content or html_content)
-        )
-
-        # Add reply-to
-        message.reply_to = Email(EMAIL_REPLY_TO)
-
-        # Add unsubscribe handling
-        if unsubscribe_group_id:
-            message.asm = Asm(GroupId(unsubscribe_group_id))
+        payload = {
+            "sender": {
+                "name": EMAIL_FROM_NAME,
+                "email": EMAIL_FROM
+            },
+            "to": [
+                {"email": to_email}
+            ],
+            "subject": subject,
+            "htmlContent": html_content,
+            "textContent": plain_content or html_content,
+            "replyTo": {
+                "email": EMAIL_REPLY_TO,
+                "name": EMAIL_FROM_NAME
+            }
+        }
 
         try:
-            response = self.client.send(message)
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.base_url}/smtp/email",
+                    json=payload,
+                    headers=self.headers
+                )
+                response.raise_for_status()
+                data = response.json()
+
             return {
-                "success": response.status_code in [200, 201, 202],
+                "success": True,
                 "status_code": response.status_code,
-                "message_id": response.headers.get("X-Message-Id"),
+                "message_id": data.get("messageId"),
                 "error": None
             }
         except Exception as e:
@@ -64,8 +78,7 @@ class EmailSender:
             result = await self.send_email(
                 to_email=email_data["to"],
                 subject=email_data["subject"],
-                html_content=email_data["body"],
-                unsubscribe_group_id=email_data.get("unsubscribe_group_id")
+                html_content=email_data["body"]
             )
             results.append(result)
 
@@ -73,3 +86,16 @@ class EmailSender:
                 await asyncio.sleep(delay_seconds)
 
         return results
+
+    async def get_account_info(self) -> Dict[str, Any]:
+        """Get Brevo account information."""
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/account",
+                    headers=self.headers
+                )
+                response.raise_for_status()
+                return response.json()
+        except Exception as e:
+            return {"error": str(e)}

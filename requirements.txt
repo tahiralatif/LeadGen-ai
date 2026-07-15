@@ -14,9 +14,7 @@ httpx==0.27.0
 aiohttp==3.10.0
 requests==2.32.0
 
-# Email
-sendgrid==6.11.0
-aiosmtplib==3.0.1
+# Email (using httpx for Brevo API)
 
 # Browser automation
 camoufox==0.4.11
