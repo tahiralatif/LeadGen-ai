@@ -12,7 +12,8 @@ class ApolloDiscovery:
         self.base_url = APOLLO_BASE_URL
         self.headers = {
             "Content-Type": "application/json",
-            "Cache-Control": "no-cache"
+            "Cache-Control": "no-cache",
+            "X-Api-Key": self.api_key
         }
 
     async def search_people(
@@ -25,11 +26,9 @@ class ApolloDiscovery:
     ) -> List[Dict[str, Any]]:
         """Search for people matching criteria."""
         payload = {
-            "api_key": self.api_key,
             "q_keywords": title or "real estate agent",
             "person_titles": [title] if title else ["Real Estate Agent", "Realtor"],
             "person_locations": [location] if location else [],
-            "organization_industry_tag_ids": [],
             "per_page": min(limit, 100)
         }
 
@@ -67,7 +66,6 @@ class ApolloDiscovery:
     async def get_organization(self, domain: str) -> Dict[str, Any]:
         """Get organization details by domain."""
         payload = {
-            "api_key": self.api_key,
             "domain": domain
         }
 

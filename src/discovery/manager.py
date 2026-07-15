@@ -2,6 +2,7 @@
 from typing import List, Dict, Any
 from .apollo import ApolloDiscovery
 from .hunter import HunterDiscovery
+from .scraper import CamoufoxScraper
 
 
 class DiscoveryManager:
@@ -10,6 +11,7 @@ class DiscoveryManager:
     def __init__(self):
         self.apollo = ApolloDiscovery()
         self.hunter = HunterDiscovery()
+        self.scraper = CamoufoxScraper()
 
     async def discover_leads(
         self,
@@ -22,7 +24,7 @@ class DiscoveryManager:
         """Discover leads from multiple sources."""
         all_leads = []
 
-        # Apollo search
+        # Try Apollo API first
         try:
             apollo_leads = await self.apollo.search_people(
                 location=location,
@@ -32,7 +34,34 @@ class DiscoveryManager:
             )
             all_leads.extend(apollo_leads)
         except Exception as e:
-            print(f"Apollo search failed: {e}")
+            print(f"Apollo API failed (expected on free plan): {e}")
+            print("Falling back to web scraping...")
+
+        # If API failed or returned empty, use scraper
+        if not all_leads:
+            try:
+                print("Scraping Apollo web interface...")
+                scraper_leads = self.scraper.scrape_apollo_web(
+                    location=location,
+                    title=title,
+                    limit=limit
+                )
+                all_leads.extend(scraper_leads)
+            except Exception as e:
+                print(f"Apollo web scraping failed: {e}")
+
+            # Try Google Maps as alternative
+            if not all_leads:
+                try:
+                    print("Trying Google Maps...")
+                    gmaps_leads = self.scraper.scrape_google_maps(
+                        query=title or "real estate agents",
+                        location=location or "Austin, TX",
+                        limit=limit
+                    )
+                    all_leads.extend(gmaps_leads)
+                except Exception as e:
+                    print(f"Google Maps scraping failed: {e}")
 
         # Hunter domain search
         if company_domain:
@@ -45,19 +74,20 @@ class DiscoveryManager:
             except Exception as e:
                 print(f"Hunter search failed: {e}")
 
-        # Deduplicate by email
-        seen_emails = set()
+        # Deduplicate by email or company name
+        seen = set()
         unique_leads = []
         for lead in all_leads:
-            if lead["email"] and lead["email"] not in seen_emails:
-                seen_emails.add(lead["email"])
+            key = lead.get("email") or lead.get("company", "").lower()
+            if key and key not in seen:
+                seen.add(key)
                 unique_leads.append(lead)
 
         return unique_leads[:limit]
 
     async def enrich_lead(self, lead: Dict[str, Any]) -> Dict[str, Any]:
         """Enrich lead with additional data."""
-        # Try to find more info using Hunter
+        # Try to find more info using Apollo
         if lead.get("company"):
             try:
                 domain = f"{lead['company'].lower().replace(' ', '')}.com"
