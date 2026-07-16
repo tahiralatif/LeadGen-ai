@@ -110,7 +110,7 @@ class Email(Base):
     __tablename__ = "emails"
 
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
+    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id"))
     subject = Column(String(500))
     body = Column(Text)

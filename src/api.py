@@ -16,7 +16,7 @@ from .outreach.tracker import EmailTracker, ReplyDetector
 from .outreach.followup import FollowUpSequence
 from .response.handler import ResponseHandler
 from .db.connection import async_session
-from .db.models import User, Lead, Campaign, Email, Response
+from .db.models import User, Lead, Campaign, Email, EmailStatus, Response
 from .utils.analytics import Analytics
 from .auth.jwt import (
     hash_password, verify_password, create_access_token,
@@ -194,16 +194,17 @@ async def update_settings(
 ):
     """Update user settings."""
     async with async_session() as db:
+        db_user = await db.merge(user)
         if request.name:
-            user.name = request.name
+            db_user.name = request.name
         if request.brevo_api_key is not None:
-            user.brevo_api_key = request.brevo_api_key
+            db_user.brevo_api_key = request.brevo_api_key
         if request.industry:
-            user.industry = request.industry
+            db_user.industry = request.industry
         if request.custom_industry is not None:
-            user.custom_industry = request.custom_industry
+            db_user.custom_industry = request.custom_industry
         if request.service_description is not None:
-            user.service_description = request.service_description
+            db_user.service_description = request.service_description
 
         await db.commit()
         return {"success": True, "message": "Settings updated"}
@@ -433,7 +434,7 @@ async def send_email(
         # Save email record first to get ID
         async with async_session() as db:
             email_record = Email(
-                lead_id=0,
+                lead_id=None,
                 subject=request.subject,
                 body=request.body,
                 status=EmailStatus.PENDING
@@ -592,24 +593,24 @@ async def get_stats(
             # Count emails sent
             email_result = await db.execute(
                 select(func.count(Email.id))
-                .join(Lead)
-                .where(Lead.user_id == user.id)
+                .outerjoin(Lead, Email.lead_id == Lead.id)
+                .where((Lead.user_id == user.id) | (Email.lead_id.is_(None)))
             )
             total_emails = email_result.scalar() or 0
 
             # Count opened emails
             opened_result = await db.execute(
                 select(func.count(Email.id))
-                .join(Lead)
-                .where(Lead.user_id == user.id, Email.opened_at.isnot(None))
+                .outerjoin(Lead, Email.lead_id == Lead.id)
+                .where(((Lead.user_id == user.id) | (Email.lead_id.is_(None))) & Email.opened_at.isnot(None))
             )
             total_opened = opened_result.scalar() or 0
 
             # Count clicked emails
             clicked_result = await db.execute(
                 select(func.count(Email.id))
-                .join(Lead)
-                .where(Lead.user_id == user.id, Email.clicked_at.isnot(None))
+                .outerjoin(Lead, Email.lead_id == Lead.id)
+                .where(((Lead.user_id == user.id) | (Email.lead_id.is_(None))) & Email.clicked_at.isnot(None))
             )
             total_clicked = clicked_result.scalar() or 0
 
