@@ -12,7 +12,7 @@ import re
 class EmailTracker:
     """Track email opens, clicks, and replies."""
 
-    def __init__(self, base_url: str = "http://69.12.84.135:8000"):
+    def __init__(self, base_url: str = "https://leadgen.14.jugaar.ai"):
         self.base_url = base_url
 
     def generate_tracking_pixel(self, email_id: int) -> str:
