@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Templates - LeadGen AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0f0f0f;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #222;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .back-link {
+            color: #888;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .template-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+        }
+
+        .template-card.selected {
+            border-color: #667eea;
+            background: #1a1a2e;
+        }
+
+        .template-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .template-card p {
+            color: #888;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .template-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+
+        .editor-section {
+            margin-top: 40px;
+        }
+
+        .editor-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #333;
+        }
+
+        .editor-card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #0f0f0f;
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .variables-help {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .variables-help h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .variable-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .variable {
+            padding: 4px 10px;
+            background: #222;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .variable:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        .preview-section {
+            margin-top: 30px;
+        }
+
+        .preview-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            color: #333;
+        }
+
+        .preview-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .preview-email {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Email Templates</h1>
+            <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+        </header>
+
+        <!-- Template Selection -->
+        <section>
+            <h2>Choose a Template</h2>
+            <div class="templates-grid">
+                <div class="template-card" onclick="selectTemplate('intro')">
+                    <h3>Introduction</h3>
+                    <p>First contact email to introduce yourself and your services to a new lead.</p>
+                    <span class="template-tag">Cold Outreach</span>
+                </div>
+                <div class="template-card" onclick="selectTemplate('followup')">
+                    <h3>Follow-up</h3>
+                    <p>Gentle follow-up email for leads who haven't responded yet.</p>
+                    <span class="template-tag">Follow-up</span>
+                </div>
+                <div class="template-card" onclick="selectTemplate('value')">
+                    <h3>Value Proposition</h3>
+                    <p>Highlight the value you can bring to their real estate business.</p>
+                    <span class="template-tag">Sales</span>
+                </div>
+                <div class="template-card" onclick="selectTemplate('meeting')">
+                    <h3>Meeting Request</h3>
+                    <p>Request a quick call or meeting to discuss how you can help.</p>
+                    <span class="template-tag">Booking</span>
+                </div>
+                <div class="template-card" onclick="selectTemplate('referral')">
+                    <h3>Referral</h3>
+                    <p>Reach out through a mutual connection or referral.</p>
+                    <span class="template-tag">Warm Lead</span>
+                </div>
+                <div class="template-card" onclick="selectTemplate('custom')">
+                    <h3>Custom Template</h3>
+                    <p>Start from scratch and create your own personalized template.</p>
+                    <span class="template-tag">Custom</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Editor -->
+        <section class="editor-section">
+            <div class="editor-card">
+                <h2>Template Editor</h2>
+                <div class="form-group">
+                    <label>Template Name</label>
+                    <input type="text" id="template-name" placeholder="My Custom Template">
+                </div>
+                <div class="form-group">
+                    <label>Email Subject</label>
+                    <input type="text" id="template-subject" placeholder="Hi {first_name}, let's connect">
+                </div>
+                <div class="form-group">
+                    <label>Email Body</label>
+                    <textarea id="template-body" placeholder="Write your email here..."></textarea>
+                    <div class="variables-help">
+                        <h4>Available Variables</h4>
+                        <div class="variable-list">
+                            <span class="variable" onclick="insertVariable('{first_name}')">{first_name}</span>
+                            <span class="variable" onclick="insertVariable('{last_name}')">{last_name}</span>
+                            <span class="variable" onclick="insertVariable('{company}')">{company}</span>
+                            <span class="variable" onclick="insertVariable('{title}')">{title}</span>
+                            <span class="variable" onclick="insertVariable('{location}')">{location}</span>
+                            <span class="variable" onclick="insertVariable('{sender_name}')">{sender_name}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn btn-primary" onclick="saveTemplate()">Save Template</button>
+                    <button class="btn btn-secondary" onclick="previewTemplate()">Preview</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Preview -->
+        <section class="preview-section hidden" id="preview-section">
+            <div class="preview-card">
+                <h3>Email Preview</h3>
+                <div class="preview-email" id="preview-content">
+                    <!-- Preview will be inserted here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const templates = {
+            intro: {
+                name: "Introduction",
+                subject: "Hi {first_name}, I'd love to help {company}",
+                body: `Hi {first_name},
+
+I came across {company} in {location} and was impressed by your work in real estate.
+
+I help agents like you find more clients using AI-powered lead generation. Would you be open to a quick 15-minute call to see how I can help you grow your business?
+
+Best,
+{sender_name}`
+            },
+            followup: {
+                name: "Follow-up",
+                subject: "Following up - {company}",
+                body: `Hi {first_name},
+
+I wanted to follow up on my previous email about helping {company} find more clients.
+
+I know you're busy, so I'll keep this short - would a quick 10-minute call work for you this week?
+
+Best,
+{sender_name}`
+            },
+            value: {
+                name: "Value Proposition",
+                subject: "How {company} can get 10x more leads",
+                body: `Hi {first_name},
+
+I've been working with real estate agents in {location} and helped them increase their lead generation by 10x.
+
+I'd love to show you how we can do the same for {company}. Are you available for a quick call this week?
+
+Best,
+{sender_name}`
+            },
+            meeting: {
+                name: "Meeting Request",
+                subject: "Quick call this week?",
+                body: `Hi {first_name},
+
+I have some ideas that could help {company} attract more clients in {location}.
+
+Would you be available for a 15-minute call this week? I promise to keep it short and valuable.
+
+Best,
+{sender_name}`
+            },
+            referral: {
+                name: "Referral",
+                subject: "Referred to you by a mutual connection",
+                body: `Hi {first_name},
+
+I was referred to you by a mutual connection in the real estate space.
+
+I help agents in {location} generate more leads using AI. Would you be open to a quick chat about how this could work for {company}?
+
+Best,
+{sender_name}`
+            },
+            custom: {
+                name: "Custom Template",
+                subject: "",
+                body: ""
+            }
+        };
+
+        let selectedTemplate = null;
+
+        function selectTemplate(type) {
+            selectedTemplate = type;
+            const template = templates[type];
+
+            // Update UI
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // Fill form
+            document.getElementById('template-name').value = template.name;
+            document.getElementById('template-subject').value = template.subject;
+            document.getElementById('template-body').value = template.body;
+        }
+
+        function insertVariable(variable) {
+            const textarea = document.getElementById('template-body');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            textarea.value = text.substring(0, start) + variable + text.substring(end);
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + variable.length;
+        }
+
+        function previewTemplate() {
+            const subject = document.getElementById('template-subject').value;
+            const body = document.getElementById('template-body').value;
+
+            // Replace variables with sample data
+            let previewSubject = subject
+                .replace('{first_name}', 'John')
+                .replace('{last_name}', 'Smith')
+                .replace('{company}', 'Austin Realty')
+                .replace('{location}', 'Austin, TX')
+                .replace('{sender_name}', 'Your Name');
+
+            let previewBody = body
+                .replace('{first_name}', 'John')
+                .replace('{last_name}', 'Smith')
+                .replace('{company}', 'Austin Realty')
+                .replace('{title}', 'Real Estate Agent')
+                .replace('{location}', 'Austin, TX')
+                .replace('{sender_name}', 'Your Name');
+
+            document.getElementById('preview-content').innerHTML = `
+                <strong>Subject:</strong> ${previewSubject}<br><br>
+                ${previewBody.replace(/\n/g, '<br>')}
+            `;
+
+            document.getElementById('preview-section').classList.remove('hidden');
+        }
+
+        function saveTemplate() {
+            const name = document.getElementById('template-name').value;
+            const subject = document.getElementById('template-subject').value;
+            const body = document.getElementById('template-body').value;
+
+            if (!name || !subject || !body) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            // Save to localStorage
+            const templates = JSON.parse(localStorage.getItem('leadgen_templates') || '[]');
+            templates.push({ name, subject, body, created: new Date().toISOString() });
+            localStorage.setItem('leadgen_templates', JSON.stringify(templates));
+
+            alert('Template saved!');
+        }
+    </script>
+</body>
+</html>

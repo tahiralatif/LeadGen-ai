@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadGen AI - AI-Powered Lead Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 1px solid #333;
+        }
+
+        .btn-secondary:hover {
+            border-color: #667eea;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 120px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff 0%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: #888;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .hero-buttons .btn {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+        }
+
+        .features h2 span {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 40px;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: #888;
+            line-height: 1.6;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 80px 40px;
+            background: #111;
+        }
+
+        .stats-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .stat-item p {
+            color: #888;
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 120px 40px;
+            text-align: center;
+        }
+
+        .cta h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .cta p {
+            color: #888;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px;
+            border-top: 1px solid #1a1a1a;
+            text-align: center;
+            color: #666;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 100px 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .pricing h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .pricing .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 60px;
+        }
+
+        .pricing-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #111 100%);
+            border: 1px solid #333;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .price {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .price span {
+            font-size: 1rem;
+            color: #888;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .pricing-features li {
+            padding: 12px 0;
+            border-bottom: 1px solid #222;
+            color: #ccc;
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            nav {
+                padding: 20px;
+            }
+
+            .nav-links {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">LeadGen AI</div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="/dashboard" class="btn btn-primary">Get Started</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Find & Convert <span>Real Estate Leads</span> with AI</h1>
+        <p>Automatically discover, contact, and convert real estate leads using AI-powered email personalization and intelligent follow-ups.</p>
+        <div class="hero-buttons">
+            <a href="/dashboard" class="btn btn-primary">Start Free Trial</a>
+            <a href="#features" class="btn btn-secondary">Learn More</a>
+        </div>
+    </section>
+
+    <section class="stats-section">
+        <div class="stats-container">
+            <div class="stat-item">
+                <h3>10x</h3>
+                <p>Faster Lead Generation</p>
+            </div>
+            <div class="stat-item">
+                <h3>300+</h3>
+                <p>Free Emails/Month</p>
+            </div>
+            <div class="stat-item">
+                <h3>AI</h3>
+                <p>Personalized Messages</p>
+            </div>
+            <div class="stat-item">
+                <h3>24/7</h3>
+                <p>Automated Follow-ups</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <h2>Everything You Need to <span>Close More Deals</span></h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Smart Lead Discovery</h3>
+                <p>Find real estate agents, agencies, and brokers using Google Maps scraping with AI-powered email finding.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✉️</div>
+                <h3>AI Email Personalization</h3>
+                <p>Generate personalized outreach emails that sound human, not robotic. Each email is unique to the lead.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Email Tracking</h3>
+                <p>Know exactly when leads open your emails and click links. Real-time notifications for hot leads.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3>Automated Follow-ups</h3>
+                <p>3-step follow-up sequences that run automatically. Never miss a potential deal again.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👤</div>
+                <h3>Multi-User Support</h3>
+                <p>Each team member gets their own account with separate leads, campaigns, and settings.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🆓</div>
+                <h3>100% Free Tools</h3>
+                <p>Built with free APIs - Brevo for emails, Google Maps for leads. No hidden costs.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <h2>Simple, Transparent Pricing</h2>
+        <p class="subtitle">Start free, upgrade when you're ready</p>
+        <div class="pricing-card">
+            <h3>Professional</h3>
+            <p>For real estate professionals</p>
+            <div class="price">$0 <span>/ forever</span></div>
+            <ul class="pricing-features">
+                <li>Unlimited lead discovery</li>
+                <li>300 free emails/month (Brevo)</li>
+                <li>AI-powered personalization</li>
+                <li>Email open & click tracking</li>
+                <li>3-step follow-up sequences</li>
+                <li>Multi-user support</li>
+                <li>Priority support</li>
+            </ul>
+            <a href="/dashboard" class="btn btn-primary" style="width: 100%;">Get Started Free</a>
+        </div>
+    </section>
+
+    <section class="cta">
+        <h2>Ready to Transform Your Lead Generation?</h2>
+        <p>Join thousands of real estate professionals using AI to close more deals.</p>
+        <a href="/dashboard" class="btn btn-primary">Start Your Free Trial</a>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 LeadGen AI. Built with ❤️ for real estate professionals.</p>
+    </footer>
+</body>
+</html>

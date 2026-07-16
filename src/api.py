@@ -203,6 +203,18 @@ async def dashboard():
     return FileResponse(str(static_dir / "index.html"))
 
 
+@app.get("/landing")
+async def landing():
+    """Serve the landing page."""
+    return FileResponse(str(static_dir / "landing.html"))
+
+
+@app.get("/templates")
+async def templates():
+    """Serve the email templates page."""
+    return FileResponse(str(static_dir / "templates.html"))
+
+
 # ===== Lead Endpoints =====
 
 @app.post("/api/leads/find")
