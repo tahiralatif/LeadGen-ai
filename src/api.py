@@ -464,8 +464,8 @@ async def send_email(
                 "https://api.brevo.com/v3/smtp/email",
                 json={
                     "sender": {
-                        "name": user.name,
-                        "email": user.email
+                        "name": user.name or "LeadGen AI",
+                        "email": "tara378581@gmail.com"
                     },
                     "to": [{"email": request.to_email}],
                     "subject": request.subject,
