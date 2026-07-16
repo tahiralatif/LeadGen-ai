@@ -72,7 +72,7 @@ class LoginRequest(BaseModel):
 
 class FindLeadsRequest(BaseModel):
     location: str
-    title: Optional[str] = "Real Estate Agent"
+    title: Optional[str] = None
     count: Optional[int] = 50
     skip_verify: Optional[bool] = False
 
@@ -236,6 +236,48 @@ async def templates():
     return FileResponse(str(static_dir / "templates.html"))
 
 
+@app.get("/analytics")
+async def analytics():
+    """Serve the email analytics page."""
+    return FileResponse(str(static_dir / "analytics.html"))
+
+
+@app.get("/api/leads/{lead_id}/emails")
+async def get_lead_emails(
+    lead_id: int,
+    user: User = Depends(get_current_user)
+):
+    """Get all emails for a specific lead."""
+    async with async_session() as db:
+        result = await db.execute(
+            select(Email)
+            .where(Email.lead_id == lead_id)
+            .order_by(Email.created_at.desc())
+        )
+        emails = result.scalars().all()
+        
+        return {
+            "success": True,
+            "emails": [
+                {
+                    "id": email.id,
+                    "lead_id": email.lead_id,
+                    "subject": email.subject,
+                    "body": email.body,
+                    "status": email.status.value if hasattr(email.status, 'value') else email.status,
+                    "sequence_step": email.sequence_step,
+                    "sent_at": email.sent_at.isoformat() if email.sent_at else None,
+                    "opened_at": email.opened_at.isoformat() if email.opened_at else None,
+                    "clicked_at": email.clicked_at.isoformat() if email.clicked_at else None,
+                    "bounced_at": email.bounced_at.isoformat() if email.bounced_at else None,
+                    "error_message": email.error_message,
+                    "created_at": email.created_at.isoformat() if email.created_at else None
+                }
+                for email in emails
+            ]
+        }
+
+
 # ===== Lead Endpoints =====
 
 @app.post("/api/leads/find")
@@ -245,9 +287,30 @@ async def find_leads(
 ):
     """Find and verify leads."""
     try:
+        # Auto-generate search query based on user's industry if no title provided
+        search_query = request.title
+        if not search_query and user.industry:
+            industry_queries = {
+                "real_estate": "real estate agency",
+                "ai_engineer": "software company",
+                "web_developer": "digital marketing agency",
+                "freelancer": "startup",
+                "marketing": "ecommerce store",
+                "consultant": "accounting firm",
+                "saas": "saas startup",
+                "ecommerce": "online store",
+                "healthcare": "medical clinic",
+                "education": "training center",
+                "other": "business"
+            }
+            search_query = industry_queries.get(user.industry, "business")
+        if not search_query:
+            search_query = "software company"
+        
+        print(f"DEBUG: search_query={search_query}, industry={user.industry}")
         leads = await discovery.discover_leads(
             location=request.location,
-            title=request.title,
+            title=search_query,
             limit=request.count
         )
 
