@@ -102,6 +102,9 @@ class CommandRequest(BaseModel):
 class SettingsRequest(BaseModel):
     name: Optional[str] = None
     brevo_api_key: Optional[str] = None
+    industry: Optional[str] = "real_estate"
+    custom_industry: Optional[str] = None
+    service_description: Optional[str] = None
 
 
 # ===== Auth Endpoints =====
@@ -174,6 +177,9 @@ async def get_me(user: User = Depends(get_current_user)):
             "email": user.email,
             "name": user.name,
             "brevo_api_key": user.brevo_api_key,
+            "industry": user.industry,
+            "custom_industry": user.custom_industry,
+            "service_description": user.service_description,
             "created_at": user.created_at.isoformat()
         }
     }
@@ -192,6 +198,12 @@ async def update_settings(
             user.name = request.name
         if request.brevo_api_key is not None:
             user.brevo_api_key = request.brevo_api_key
+        if request.industry:
+            user.industry = request.industry
+        if request.custom_industry is not None:
+            user.custom_industry = request.custom_industry
+        if request.service_description is not None:
+            user.service_description = request.service_description
 
         await db.commit()
         return {"success": True, "message": "Settings updated"}

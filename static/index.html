@@ -621,17 +621,63 @@
                 <h2>Your Settings</h2>
 
                 <div class="info-box">
+                    <h4>How it works:</h4>
+                    <p>
+                        1. Select your <strong>industry</strong> below<br>
+                        2. The AI will auto-generate search queries & email templates<br>
+                        3. Configure your <strong>Brevo API key</strong> to send emails
+                    </p>
+                </div>
+
+                <h3 style="margin: 20px 0 15px; color: #667eea;">Your Profile</h3>
+
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" id="settings-name" placeholder="John Smith">
+                </div>
+
+                <div class="form-group">
+                    <label>Industry / Profession</label>
+                    <select id="settings-industry" onchange="onIndustryChange()">
+                        <option value="real_estate">Real Estate Agent</option>
+                        <option value="ai_engineer">AI Engineer / Developer</option>
+                        <option value="web_developer">Web Developer</option>
+                        <option value="freelancer">Freelancer</option>
+                        <option value="marketing">Marketing Agency</option>
+                        <option value="consultant">Consultant</option>
+                        <option value="saas">SaaS Founder</option>
+                        <option value="ecommerce">E-Commerce</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="education">Education</option>
+                        <option value="other">Other (Custom)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="custom-industry-group" style="display:none;">
+                    <label>Describe Your Target Client</label>
+                    <input type="text" id="settings-custom-industry" placeholder="e.g., I help restaurants get more customers">
+                </div>
+
+                <div class="form-group" id="service-group" style="display:none;">
+                    <label>What Service Do You Offer?</label>
+                    <textarea id="settings-service" rows="3" placeholder="e.g., I build AI chatbots and automation systems for businesses"></textarea>
+                </div>
+
+                <div class="info-box" id="preview-box" style="margin-top: 20px;">
+                    <h4>Auto-Generated Settings:</h4>
+                    <p id="preview-search">Search: <strong>real estate agency</strong></p>
+                    <p id="preview-template" style="margin-top: 10px; white-space: pre-line;">Email: I help real estate agents find more clients using AI...</p>
+                </div>
+
+                <h3 style="margin: 30px 0 15px; color: #667eea;">Email Configuration</h3>
+
+                <div class="info-box">
                     <h4>How to get free API keys:</h4>
                     <p>
                         1. <strong>Brevo</strong>: Sign up at <a href="https://brevo.com" target="_blank">brevo.com</a> (free: 300 emails/day)<br>
                         2. Go to Settings → SMTP & API → Create API Key<br>
                         3. Paste your API key below
                     </p>
-                </div>
-
-                <div class="form-group">
-                    <label>Your Name</label>
-                    <input type="text" id="settings-name" placeholder="John Smith">
                 </div>
 
                 <div class="form-group">
@@ -775,10 +821,7 @@
                 document.getElementById('user-email').textContent = currentUser.email;
                 document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
 
-                // Load settings
-                if (currentUser.name) document.getElementById('settings-name').value = currentUser.name;
-                if (currentUser.brevo_api_key) document.getElementById('settings-apikey').value = currentUser.brevo_api_key;
-
+                loadUserSettings();
                 updateSettingsStatus();
             }
 
@@ -805,6 +848,70 @@
 
         // ===== Settings Functions =====
 
+        const industryConfig = {
+            real_estate: {
+                search: "real estate agency",
+                template: "Hi {first_name},\n\nI noticed {company} in {location}. I help real estate agents generate 3x more leads using AI-powered marketing.\n\nCan we schedule a quick 15-minute call?\n\nBest,\n{sender_name}"
+            },
+            ai_engineer: {
+                search: "software company",
+                template: "Hi {first_name},\n\nI see {company} is building great products in {location}. I help businesses automate tasks using AI, saving 10+ hours/week.\n\nWould you like a free 15-minute demo?\n\nBest,\n{sender_name}"
+            },
+            web_developer: {
+                search: "digital marketing agency",
+                template: "Hi {first_name},\n\nI noticed {company} could boost its online presence. I build modern, fast websites that convert visitors into customers.\n\nInterested in a free audit?\n\nBest,\n{sender_name}"
+            },
+            freelancer: {
+                search: "startup",
+                template: "Hi {first_name},\n\nI saw {company} in {location}. I help startups scale faster with affordable design & development.\n\nWould you like to chat?\n\nBest,\n{sender_name}"
+            },
+            marketing: {
+                search: "ecommerce store",
+                template: "Hi {first_name},\n\nI noticed {company} in {location}. I help e-commerce stores increase sales by 40% through targeted digital marketing.\n\nCan I show you how?\n\nBest,\n{sender_name}"
+            },
+            consultant: {
+                search: "accounting firm",
+                template: "Hi {first_name},\n\nI work with firms like {company} in {location} to streamline operations and reduce costs.\n\nWould a free consultation be helpful?\n\nBest,\n{sender_name}"
+            },
+            saas: {
+                search: "saas startup",
+                template: "Hi {first_name},\n\nI see {company} is growing in {location}. I help SaaS companies reduce churn and increase user engagement.\n\nInterested in a quick chat?\n\nBest,\n{sender_name}"
+            },
+            ecommerce: {
+                search: "online store",
+                template: "Hi {first_name},\n\nI noticed {company} in {location}. I help online stores boost conversions with AI-powered recommendations.\n\nWant a free audit?\n\nBest,\n{sender_name}"
+            },
+            healthcare: {
+                search: "medical clinic",
+                template: "Hi {first_name},\n\nI see {company} in {location}. I help healthcare providers attract more patients through digital marketing.\n\nCan we schedule a quick call?\n\nBest,\n{sender_name}"
+            },
+            education: {
+                search: "training center",
+                template: "Hi {first_name},\n\nI noticed {company} in {location}. I help education businesses grow enrollment with online marketing.\n\nWould you like to learn more?\n\nBest,\n{sender_name}"
+            }
+        };
+
+        function onIndustryChange() {
+            const industry = document.getElementById('settings-industry').value;
+            const customGroup = document.getElementById('custom-industry-group');
+            const serviceGroup = document.getElementById('service-group');
+
+            if (industry === 'other') {
+                customGroup.style.display = 'block';
+                serviceGroup.style.display = 'block';
+                document.getElementById('preview-search').innerHTML = 'Search: <strong>(custom based on your description)</strong>';
+                document.getElementById('preview-template').textContent = 'Email: AI will generate based on your description...';
+            } else {
+                customGroup.style.display = 'none';
+                serviceGroup.style.display = 'none';
+                const config = industryConfig[industry];
+                if (config) {
+                    document.getElementById('preview-search').innerHTML = `Search: <strong>${config.search}</strong>`;
+                    document.getElementById('preview-template').textContent = `Email: ${config.template.substring(0, 120)}...`;
+                }
+            }
+        }
+
         function updateSettingsStatus() {
             const apiKey = currentUser?.brevo_api_key;
             const alert = document.getElementById('settings-alert');
@@ -819,19 +926,49 @@
             }
         }
 
+        function loadUserSettings() {
+            if (!currentUser) return;
+
+            document.getElementById('settings-name').value = currentUser.name || '';
+            document.getElementById('settings-apikey').value = currentUser.brevo_api_key || '';
+
+            if (currentUser.industry) {
+                document.getElementById('settings-industry').value = currentUser.industry;
+                onIndustryChange();
+            }
+            if (currentUser.custom_industry) {
+                document.getElementById('settings-custom-industry').value = currentUser.custom_industry;
+            }
+            if (currentUser.service_description) {
+                document.getElementById('settings-service').value = currentUser.service_description;
+            }
+        }
+
         async function saveSettings() {
             const name = document.getElementById('settings-name').value;
             const apiKey = document.getElementById('settings-apikey').value;
+            const industry = document.getElementById('settings-industry').value;
+            const customIndustry = document.getElementById('settings-custom-industry').value;
+            const serviceDescription = document.getElementById('settings-service').value;
 
             try {
                 const data = await apiCall('/api/settings', {
                     method: 'PUT',
-                    body: JSON.stringify({ name, brevo_api_key: apiKey })
+                    body: JSON.stringify({
+                        name,
+                        brevo_api_key: apiKey,
+                        industry,
+                        custom_industry: customIndustry,
+                        service_description: serviceDescription
+                    })
                 });
 
                 if (data.success) {
                     currentUser.name = name;
                     currentUser.brevo_api_key = apiKey;
+                    currentUser.industry = industry;
+                    currentUser.custom_industry = customIndustry;
+                    currentUser.service_description = serviceDescription;
                     updateSettingsStatus();
                     showResult('settings-result', 'Settings saved!', true);
                 } else {
