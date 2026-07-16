@@ -182,9 +182,21 @@ leadgen-agent/
 ### Web Interface
 
 1. Visit http://69.12.84.135:8000/landing
-2. Click "Get Started" to register
-3. Configure your Brevo API key in Settings
+2. Click "Get Started" to register or login
+3. **Pre-configured account:**
+   - Email: `tara378581@gmail.com`
+   - Password: `leadgen123`
 4. Find leads and send campaigns
+
+### Default Account
+
+A pre-configured account is available with Brevo API key already set up:
+
+| Field | Value |
+|-------|-------|
+| Email | tara378581@gmail.com |
+| Password | leadgen123 |
+| Brevo API | Configured ✓ |
 
 ### API Usage
 
