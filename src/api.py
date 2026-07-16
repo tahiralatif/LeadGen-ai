@@ -22,14 +22,22 @@ from .auth.jwt import (
     hash_password, verify_password, create_access_token,
     get_current_user, decode_token
 )
+from .middleware import RateLimitMiddleware, ErrorHandlerMiddleware, RequestLoggingMiddleware
 from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 app = FastAPI(
     title="LeadGen Agent",
     description="AI-powered lead generation and outreach",
-    version="2.0.0"
+    version="3.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
 )
+
+# Add middleware (order matters - last added = first executed)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(RateLimitMiddleware, max_requests=100, window_seconds=60)
 
 # CORS
 app.add_middleware(
@@ -710,8 +718,29 @@ async def cancel_followup(
 
 @app.get("/health")
 async def health():
-    """Health check endpoint."""
+    """Health check endpoint with system status."""
+    from datetime import datetime
+    import os
+
+    # Check database connectivity
+    db_status = "healthy"
+    try:
+        from sqlalchemy import text
+        async with async_session() as db:
+            await db.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+
     return {
         "status": "healthy",
-        "version": "3.0.0"
+        "version": "3.0.0",
+        "timestamp": datetime.utcnow().isoformat(),
+        "services": {
+            "database": db_status,
+            "api": "healthy"
+        },
+        "system": {
+            "pid": os.getpid(),
+            "uptime": datetime.utcnow().isoformat()
+        }
     }

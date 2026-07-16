@@ -167,15 +167,15 @@ class ReplyDetector:
         """Parse an email reply to extract intent."""
         content_lower = email_data.lower()
 
-        # Simple intent classification
-        if any(word in content_lower for word in ['interested', 'yes', 'tell me more', 'schedule', 'meeting', 'call']):
-            intent = 'interested'
-        elif any(word in content_lower for word in ['not interested', 'no thanks', 'unsubscribe', 'stop']):
+        # Simple intent classification - check negative first
+        if any(word in content_lower for word in ['not interested', 'no thanks', 'unsubscribe', 'stop']):
             intent = 'not_interested'
-        elif any(word in content_lower for word in ['question', 'how', 'what', 'when', 'where']):
-            intent = 'question'
         elif any(word in content_lower for word in ['schedule', 'book', 'calendar', 'available']):
             intent = 'schedule'
+        elif any(word in content_lower for word in ['question', 'how', 'what', 'when', 'where']):
+            intent = 'question'
+        elif any(word in content_lower for word in ['interested', 'yes', 'tell me more', 'meeting', 'call']):
+            intent = 'interested'
         else:
             intent = 'neutral'
 
