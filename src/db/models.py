@@ -9,6 +9,23 @@ class Base(DeclarativeBase):
     pass
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    brevo_api_key = Column(String(500))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    leads = relationship("Lead", back_populates="user")
+    campaigns = relationship("Campaign", back_populates="user")
+
+
 class LeadStatus(enum.Enum):
     NEW = "new"
     CONTACTED = "contacted"
@@ -40,22 +57,26 @@ class Lead(Base):
     __tablename__ = "leads"
 
     id = Column(Integer, primary_key=True)
-    email = Column(String(255), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    email = Column(String(255), index=True)
     first_name = Column(String(100))
     last_name = Column(String(100))
     company = Column(String(255))
     title = Column(String(255))
     phone = Column(String(50))
     location = Column(String(255))
-    source = Column(String(50))  # apollo, hunter, manual
+    source = Column(String(50))  # apollo, hunter, manual, google_maps
     status = Column(Enum(LeadStatus), default=LeadStatus.NEW)
     verified = Column(Boolean, default=False)
     verification_score = Column(Integer)  # 0-100
+    email_source = Column(String(50))  # website, contact_page, guessed
+    email_confidence = Column(Integer)  # 0-100
     unsubscribed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    user = relationship("User", back_populates="leads")
     emails = relationship("Email", back_populates="lead")
     responses = relationship("Response", back_populates="lead")
 
@@ -64,6 +85,7 @@ class Campaign(Base):
     __tablename__ = "campaigns"
 
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
     status = Column(Enum(CampaignStatus), default=CampaignStatus.DRAFT)
     subject_line = Column(String(500))
@@ -76,6 +98,7 @@ class Campaign(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    user = relationship("User", back_populates="campaigns")
     emails = relationship("Email", back_populates="campaign")
 
 
