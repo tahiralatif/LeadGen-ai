@@ -278,6 +278,59 @@ async def get_lead_emails(
         }
 
 
+@app.get("/api/emails/all")
+async def get_all_emails(
+    user: User = Depends(get_current_user)
+):
+    """Get ALL emails sent by this user."""
+    async with async_session() as db:
+        result = await db.execute(
+            select(Email)
+            .order_by(Email.created_at.desc())
+        )
+        emails = result.scalars().all()
+        
+        # Also get lead info for each email
+        emails_with_lead = []
+        for email in emails:
+            lead_info = None
+            if email.lead_id:
+                lead_result = await db.execute(
+                    select(Lead).where(Lead.id == email.lead_id)
+                )
+                lead = lead_result.scalar_one_or_none()
+                if lead:
+                    lead_info = {
+                        "id": lead.id,
+                        "email": lead.email,
+                        "company": lead.company,
+                        "phone": lead.phone,
+                        "source": lead.source
+                    }
+            
+            emails_with_lead.append({
+                "id": email.id,
+                "lead_id": email.lead_id,
+                "recipient_email": email.recipient_email,
+                "subject": email.subject,
+                "body": email.body,
+                "status": email.status.value if hasattr(email.status, 'value') else email.status,
+                "sequence_step": email.sequence_step,
+                "sent_at": email.sent_at.isoformat() if email.sent_at else None,
+                "opened_at": email.opened_at.isoformat() if email.opened_at else None,
+                "clicked_at": email.clicked_at.isoformat() if email.clicked_at else None,
+                "bounced_at": email.bounced_at.isoformat() if email.bounced_at else None,
+                "error_message": email.error_message,
+                "created_at": email.created_at.isoformat() if email.created_at else None,
+                "lead": lead_info
+            })
+        
+        return {
+            "success": True,
+            "emails": emails_with_lead
+        }
+
+
 # ===== Lead Endpoints =====
 
 @app.post("/api/leads/find")
@@ -498,6 +551,7 @@ async def send_email(
         async with async_session() as db:
             email_record = Email(
                 lead_id=None,
+                recipient_email=request.to_email,
                 subject=request.subject,
                 body=request.body,
                 status=EmailStatus.PENDING

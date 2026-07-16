@@ -300,29 +300,10 @@
                     document.getElementById('open-rate').textContent = rate + '%';
                 }
 
-                // Get leads with emails
-                const leadsData = await apiCall('/api/leads');
-                if (leadsData.success) {
-                    // Get emails for each lead
-                    const emailPromises = leadsData.leads.map(lead => 
-                        apiCall(`/api/leads/${lead.id}/emails`).catch(() => ({ emails: [] }))
-                    );
-                    const emailResults = await Promise.all(emailPromises);
-                    
-                    allEmails = [];
-                    emailResults.forEach((result, idx) => {
-                        if (result.emails) {
-                            result.emails.forEach(email => {
-                                email.lead = leadsData.leads[idx];
-                                allEmails.push(email);
-                            });
-                        }
-                    });
-
-                    // Also get direct emails (no lead)
-                    // These are emails sent directly without a lead record
-                    allEmails.sort((a, b) => new Date(b.sent_at || b.created_at) - new Date(a.sent_at || a.created_at));
-                    
+                // Get ALL emails directly
+                const emailData = await apiCall('/api/emails/all');
+                if (emailData.success) {
+                    allEmails = emailData.emails;
                     renderEmails(allEmails);
                 }
             } catch (error) {
@@ -355,7 +336,7 @@
                         <div>
                             <div class="email-subject">${escapeHtml(email.subject)}</div>
                             <div class="email-recipient">
-                                <i class="fas fa-paper-plane me-1"></i>To: ${escapeHtml(email.lead?.email || 'Direct Send')}
+                                <i class="fas fa-paper-plane me-1"></i>To: ${escapeHtml(email.recipient_email || email.lead?.email || 'Unknown')}
                                 ${email.lead?.company ? `<span class="ms-2 text-muted">(${escapeHtml(email.lead.company)})</span>` : ''}
                             </div>
                         </div>
@@ -369,16 +350,6 @@
                         ${email.clicked_at ? `<span class="text-warning"><i class="fas fa-mouse-pointer me-1"></i>Clicked</span>` : ''}
                         <span class="text-muted"><i class="fas fa-hashtag me-1"></i>#${email.id}</span>
                     </div>
-                    <div class="tracking-info">
-                        <div class="tracking-item">
-                            <i class="fas fa-paper-plane text-success"></i>
-                            <span>Sent via Brevo</span>
-                        </div>
-                        <div class="tracking-item">
-                            <i class="fas fa-shield-alt text-primary"></i>
-                            <span>Message ID: ${email.message_id || 'N/A'}</span>
-                        </div>
-                    </div>
                 </div>
             `).join('');
         }
@@ -386,6 +357,9 @@
         function showEmailDetail(emailId) {
             const email = allEmails.find(e => e.id === emailId);
             if (!email) return;
+
+            const recipientEmail = email.lead?.email || extractRecipientFromEmail(email);
+            const recipientCompany = email.lead?.company || 'Direct Send';
 
             const content = document.getElementById('email-detail-content');
             content.innerHTML = `
@@ -403,9 +377,8 @@
                     <div class="col-md-6">
                         <h6 class="text-muted mb-2">Recipient</h6>
                         <table class="table table-sm table-custom">
-                            <tr><td class="text-muted">Email:</td><td>${escapeHtml(email.lead?.email || 'Direct')}</td></tr>
-                            <tr><td class="text-muted">Company:</td><td>${escapeHtml(email.lead?.company || 'N/A')}</td></tr>
-                            <tr><td class="text-muted">Phone:</td><td>${escapeHtml(email.lead?.phone || 'N/A')}</td></tr>
+                            <tr><td class="text-muted">Email:</td><td>${escapeHtml(recipientEmail)}</td></tr>
+                            <tr><td class="text-muted">Company:</td><td>${escapeHtml(recipientCompany)}</td></tr>
                             <tr><td class="text-muted">Source:</td><td>${escapeHtml(email.lead?.source || 'Direct')}</td></tr>
                         </table>
                     </div>
@@ -420,7 +393,7 @@
                 <div class="tracking-info flex-column">
                     <div class="tracking-item mb-2">
                         <span class="timeline-dot dot-sent"></span>
-                        <span>Email sent to ${escapeHtml(email.lead?.email || 'recipient')}</span>
+                        <span>Email sent to ${escapeHtml(recipientEmail)}</span>
                         <span class="text-muted ms-auto">${formatDate(email.sent_at)}</span>
                     </div>
                     ${email.opened_at ? `
@@ -444,8 +417,7 @@
                     <small class="text-muted">
                         <strong>From:</strong> Tahira Latif &lt;tara378581@gmail.com&gt;<br>
                         <strong>Via:</strong> Brevo SMTP (smtp-relay.mailin.fr)<br>
-                        <strong>To:</strong> ${escapeHtml(email.lead?.email || 'recipient')}<br>
-                        <strong>Message ID:</strong> ${email.message_id || 'N/A'}<br>
+                        <strong>To:</strong> ${escapeHtml(recipientEmail)}<br>
                         <strong>Note:</strong> Emails sent via Brevo appear in your Inbox (copy) but NOT in Gmail Sent folder.
                     </small>
                 </div>
@@ -453,6 +425,14 @@
 
             const modal = new bootstrap.Modal(document.getElementById('emailModal'));
             modal.show();
+        }
+
+        function extractRecipientFromEmail(email) {
+            // Try to extract recipient from email body or subject
+            const body = email.body || '';
+            const match = body.match(/To:\s*(.+)/i);
+            if (match) return match[1].trim();
+            return 'Unknown Recipient';
         }
 
         function filterEmails(status) {

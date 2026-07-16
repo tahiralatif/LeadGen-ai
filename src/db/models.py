@@ -112,6 +112,7 @@ class Email(Base):
     id = Column(Integer, primary_key=True)
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id"))
+    recipient_email = Column(String(500))  # Who we sent to
     subject = Column(String(500))
     body = Column(Text)
     status = Column(Enum(EmailStatus), default=EmailStatus.PENDING)
