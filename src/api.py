@@ -12,6 +12,8 @@ from .openclaw.agent import LeadGenAgent
 from .discovery.manager import DiscoveryManager
 from .enrichment.verifier import EmailVerifier
 from .outreach.campaign import CampaignManager
+from .outreach.tracker import EmailTracker, ReplyDetector
+from .outreach.followup import FollowUpSequence
 from .response.handler import ResponseHandler
 from .db.connection import async_session
 from .db.models import User, Lead, Campaign, Email, Response
@@ -20,7 +22,7 @@ from .auth.jwt import (
     hash_password, verify_password, create_access_token,
     get_current_user, decode_token
 )
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 app = FastAPI(
@@ -389,17 +391,36 @@ async def send_email(
     request: SendEmailRequest,
     user: User = Depends(get_current_user)
 ):
-    """Send a single email using user's own API key."""
+    """Send a single email using user's own API key with tracking."""
     try:
         if not user.brevo_api_key:
             return {"success": False, "error": "Please configure your Brevo API key in Settings"}
 
-        # Convert plain text to HTML
+        tracker = EmailTracker()
+
+        # Save email record first to get ID
+        async with async_session() as db:
+            email_record = Email(
+                lead_id=0,
+                subject=request.subject,
+                body=request.body,
+                status=EmailStatus.PENDING
+            )
+            db.add(email_record)
+            await db.commit()
+            await db.refresh(email_record)
+            email_id = email_record.id
+
+        # Add tracking pixel for open tracking
+        tracking_pixel = tracker.generate_tracking_pixel(email_id)
+
+        # Convert plain text to HTML with tracking
         body_html = request.body.replace("\n", "<br>")
         html_content = f"""
         <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             {body_html}
+            {tracking_pixel}
         </body>
         </html>
         """
@@ -428,23 +449,36 @@ async def send_email(
             if response.status_code in [200, 201]:
                 data = response.json()
 
-                # Save email record
+                # Update email record with sent status
                 async with async_session() as db:
-                    email_record = Email(
-                        lead_id=0,
-                        subject=request.subject,
-                        body=request.body,
-                        status="sent",
-                        sent_at=datetime.utcnow()
+                    await db.execute(
+                        update(Email)
+                        .where(Email.id == email_id)
+                        .values(
+                            status=EmailStatus.SENT,
+                            sent_at=datetime.utcnow()
+                        )
                     )
-                    db.add(email_record)
                     await db.commit()
 
                 return {
                     "success": True,
-                    "message_id": data.get("messageId")
+                    "message_id": data.get("messageId"),
+                    "email_id": email_id
                 }
             else:
+                # Update email record with failed status
+                async with async_session() as db:
+                    await db.execute(
+                        update(Email)
+                        .where(Email.id == email_id)
+                        .values(
+                            status=EmailStatus.FAILED,
+                            error_message=f"API error: {response.status_code}"
+                        )
+                    )
+                    await db.commit()
+
                 return {
                     "success": False,
                     "error": f"Brevo API error: {response.status_code}"
@@ -531,16 +565,133 @@ async def get_stats(
             )
             total_emails = email_result.scalar() or 0
 
+            # Count opened emails
+            opened_result = await db.execute(
+                select(func.count(Email.id))
+                .join(Lead)
+                .where(Lead.user_id == user.id, Email.opened_at.isnot(None))
+            )
+            total_opened = opened_result.scalar() or 0
+
+            # Count clicked emails
+            clicked_result = await db.execute(
+                select(func.count(Email.id))
+                .join(Lead)
+                .where(Lead.user_id == user.id, Email.clicked_at.isnot(None))
+            )
+            total_clicked = clicked_result.scalar() or 0
+
             return {
                 "success": True,
                 "stats": {
                     "total_leads": total_leads,
                     "total_campaigns": total_campaigns,
-                    "total_emails": total_emails
+                    "total_emails": total_emails,
+                    "total_opened": total_opened,
+                    "total_clicked": total_clicked
                 }
             }
     except Exception as e:
-        return {"success": True, "stats": {"total_leads": 0, "total_campaigns": 0, "total_emails": 0}}
+        return {"success": True, "stats": {"total_leads": 0, "total_campaigns": 0, "total_emails": 0, "total_opened": 0, "total_clicked": 0}}
+
+
+# ===== Tracking Endpoints =====
+
+@app.get("/api/track/open/{email_id}")
+async def track_open(email_id: int):
+    """Track email open - returns 1x1 tracking pixel."""
+    tracker = EmailTracker()
+    pixel = await tracker.track_open(email_id)
+    from fastapi.responses import Response
+    return Response(content=pixel, media_type="image/gif")
+
+
+@app.get("/api/track/click/{email_id}")
+async def track_click(email_id: int, url: str):
+    """Track link click - redirects to original URL."""
+    tracker = EmailTracker()
+    redirect_url = await tracker.track_click(email_id, url)
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=redirect_url)
+
+
+@app.get("/api/campaigns/{campaign_id}/stats")
+async def get_campaign_stats(
+    campaign_id: int,
+    user: User = Depends(get_current_user)
+):
+    """Get campaign tracking statistics."""
+    tracker = EmailTracker()
+    stats = await tracker.get_campaign_stats(campaign_id)
+    return {"success": True, "stats": stats}
+
+
+# ===== Follow-up Endpoints =====
+
+@app.post("/api/followup/create")
+async def create_followup(
+    lead_id: int,
+    campaign_id: int,
+    subject: str,
+    message: str,
+    user: User = Depends(get_current_user)
+):
+    """Create follow-up sequence for a lead."""
+    followup = FollowUpSequence()
+    email_ids = await followup.create_sequence(
+        lead_id=lead_id,
+        campaign_id=campaign_id,
+        subject=subject,
+        message=message
+    )
+    return {"success": True, "email_ids": email_ids, "total_steps": len(email_ids)}
+
+
+@app.get("/api/followup/{lead_id}/pending")
+async def get_pending_followups(
+    lead_id: int,
+    user: User = Depends(get_current_user)
+):
+    """Get pending follow-ups for a lead."""
+    followup = FollowUpSequence()
+    pending = await followup.get_pending_follow_ups(lead_id)
+    return {"success": True, "pending": pending}
+
+
+@app.post("/api/followup/send-next")
+async def send_next_followup(
+    lead_id: int,
+    user: User = Depends(get_current_user)
+):
+    """Send next follow-up email."""
+    followup = FollowUpSequence()
+
+    if not user.brevo_api_key:
+        return {"success": False, "error": "Please configure your Brevo API key"}
+
+    result = await followup.send_next_follow_up(
+        lead_id=lead_id,
+        api_key=user.brevo_api_key,
+        sender_email=user.email,
+        sender_name=user.name
+    )
+
+    if result:
+        return {"success": True, "result": result}
+    else:
+        return {"success": False, "error": "No pending follow-ups"}
+
+
+@app.delete("/api/followup/{lead_id}/{campaign_id}")
+async def cancel_followup(
+    lead_id: int,
+    campaign_id: int,
+    user: User = Depends(get_current_user)
+):
+    """Cancel follow-up sequence."""
+    followup = FollowUpSequence()
+    await followup.cancel_sequence(lead_id, campaign_id)
+    return {"success": True, "message": "Follow-up sequence cancelled"}
 
 
 # ===== Health Check =====
@@ -550,5 +701,5 @@ async def health():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "version": "2.0.0"
+        "version": "3.0.0"
     }

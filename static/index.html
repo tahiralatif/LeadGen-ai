@@ -511,12 +511,12 @@
                 <div class="value" id="stat-emails">0</div>
             </div>
             <div class="stat-card">
-                <h3>Campaigns</h3>
-                <div class="value" id="stat-campaigns">0</div>
+                <h3>Opened</h3>
+                <div class="value" id="stat-opened">0</div>
             </div>
             <div class="stat-card">
-                <h3>Responses</h3>
-                <div class="value" id="stat-responses">0</div>
+                <h3>Clicked</h3>
+                <div class="value" id="stat-clicked">0</div>
             </div>
         </div>
 
@@ -895,7 +895,8 @@
                 if (data.success) {
                     document.getElementById('stat-leads').textContent = data.stats.total_leads || 0;
                     document.getElementById('stat-emails').textContent = data.stats.total_emails || 0;
-                    document.getElementById('stat-campaigns').textContent = data.stats.total_campaigns || 0;
+                    document.getElementById('stat-opened').textContent = data.stats.total_opened || 0;
+                    document.getElementById('stat-clicked').textContent = data.stats.total_clicked || 0;
                 }
             } catch (e) {
                 console.error('Failed to load stats:', e);
