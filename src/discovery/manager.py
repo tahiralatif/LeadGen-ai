@@ -1,4 +1,5 @@
 """Discovery manager to coordinate multiple sources with real email finding."""
+import asyncio
 from typing import List, Dict, Any
 from .apollo import ApolloDiscovery
 from .hunter import HunterDiscovery
@@ -44,7 +45,8 @@ class DiscoveryManager:
         if not all_leads:
             try:
                 print("Scraping Google Maps...")
-                scraper_leads = self.scraper.scrape_google_maps(
+                scraper_leads = await asyncio.to_thread(
+                    self.scraper.scrape_google_maps,
                     query=title or "real estate agents",
                     location=location or "Austin, TX",
                     limit=limit
