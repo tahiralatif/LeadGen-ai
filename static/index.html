@@ -142,6 +142,15 @@
             transform: none;
         }
 
+        .btn-secondary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
         .leads-table {
             width: 100%;
             border-collapse: collapse;
@@ -188,6 +197,11 @@
             color: #3b82f6;
         }
 
+        .badge-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
         .result-box {
             margin-top: 20px;
             padding: 15px;
@@ -227,6 +241,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .tab {
@@ -271,16 +286,45 @@
             }
         }
 
-        .email-preview {
-            background: #fff;
-            color: #333;
-            padding: 20px;
+        .settings-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
             border-radius: 8px;
-            margin-top: 15px;
+            margin-bottom: 20px;
         }
 
-        .email-preview h4 {
-            margin-bottom: 10px;
+        .settings-status.configured {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+        }
+
+        .settings-status.not-configured {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h4 {
+            color: #3b82f6;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .info-box a {
+            color: #667eea;
         }
     </style>
 </head>
@@ -290,6 +334,12 @@
             <h1>LeadGen AI</h1>
             <p class="subtitle">AI-powered lead generation for real estate agents</p>
         </header>
+
+        <!-- Settings Status -->
+        <div id="settings-alert" class="settings-status not-configured" style="display:none;">
+            <span>⚠️</span>
+            <span>You need to configure your email settings first. Go to <strong>Settings</strong> tab.</span>
+        </div>
 
         <!-- Stats -->
         <div class="stats-grid">
@@ -316,6 +366,7 @@
             <div class="tab active" data-tab="find">Find Leads</div>
             <div class="tab" data-tab="campaign">Send Campaign</div>
             <div class="tab" data-tab="leads">View Leads</div>
+            <div class="tab" data-tab="settings">Settings</div>
         </div>
 
         <!-- Find Leads Tab -->
@@ -401,10 +452,124 @@
                 </table>
             </div>
         </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="tab-settings">
+            <div class="card">
+                <h2>Your Settings</h2>
+
+                <div class="info-box">
+                    <h4>How to get free API keys:</h4>
+                    <p>
+                        1. <strong>Brevo</strong>: Sign up at <a href="https://brevo.com" target="_blank">brevo.com</a> (free: 300 emails/day)<br>
+                        2. Go to Settings → SMTP & API → Create API Key<br>
+                        3. Paste your API key below
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label>Your Email Address (sender)</label>
+                    <input type="email" id="settings-email" placeholder="your-email@gmail.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" id="settings-name" placeholder="John Smith">
+                </div>
+
+                <div class="form-group">
+                    <label>Brevo API Key (xkeysib-...)</label>
+                    <input type="password" id="settings-apikey" placeholder="xkeysib-...">
+                </div>
+
+                <button class="btn btn-primary" onclick="saveSettings()">
+                    Save Settings
+                </button>
+                <button class="btn btn-secondary" onclick="testSettings()">
+                    Test Connection
+                </button>
+
+                <div class="result-box" id="settings-result"></div>
+            </div>
+        </div>
     </div>
 
     <script>
         const API_URL = window.location.origin;
+
+        // Load saved settings from localStorage
+        function loadSavedSettings() {
+            const email = localStorage.getItem('leadgen_email');
+            const name = localStorage.getItem('leadgen_name');
+            const apiKey = localStorage.getItem('leadgen_apikey');
+
+            if (email) document.getElementById('settings-email').value = email;
+            if (name) document.getElementById('settings-name').value = name;
+            if (apiKey) document.getElementById('settings-apikey').value = apiKey;
+
+            updateSettingsStatus();
+        }
+
+        function updateSettingsStatus() {
+            const email = localStorage.getItem('leadgen_email');
+            const apiKey = localStorage.getItem('leadgen_apikey');
+            const alert = document.getElementById('settings-alert');
+
+            if (email && apiKey) {
+                alert.className = 'settings-status configured';
+                alert.innerHTML = '<span>✅</span><span>Settings configured. Ready to send emails from: <strong>' + email + '</strong></span>';
+            } else {
+                alert.className = 'settings-status not-configured';
+                alert.style.display = 'flex';
+            }
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            const email = document.getElementById('settings-email').value;
+            const name = document.getElementById('settings-name').value;
+            const apiKey = document.getElementById('settings-apikey').value;
+
+            if (!email || !apiKey) {
+                showResult('settings-result', 'Please enter email and API key', false);
+                return;
+            }
+
+            localStorage.setItem('leadgen_email', email);
+            localStorage.setItem('leadgen_name', name);
+            localStorage.setItem('leadgen_apikey', apiKey);
+
+            updateSettingsStatus();
+            showResult('settings-result', 'Settings saved! You can now send emails.', true);
+        }
+
+        // Test settings
+        async function testSettings() {
+            const email = localStorage.getItem('leadgen_email');
+            const apiKey = localStorage.getItem('leadgen_apikey');
+
+            if (!email || !apiKey) {
+                showResult('settings-result', 'Please save settings first', false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/test-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, api_key: apiKey })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showResult('settings-result', 'Test email sent to ' + email + '! Check your inbox.', true);
+                } else {
+                    showResult('settings-result', 'Error: ' + (data.error || 'Unknown error'), false);
+                }
+            } catch (e) {
+                showResult('settings-result', 'Error: ' + e.message, false);
+            }
+        }
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -415,6 +580,13 @@
                 document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
             });
         });
+
+        // Show result
+        function showResult(elementId, message, success) {
+            const el = document.getElementById(elementId);
+            el.className = 'result-box show ' + (success ? 'success' : 'error');
+            el.innerHTML = message;
+        }
 
         // Load stats
         async function loadStats() {
@@ -486,6 +658,14 @@
         async function sendCampaign() {
             const btn = document.getElementById('btn-send');
             const resultBox = document.getElementById('send-result');
+            const apiKey = localStorage.getItem('leadgen_apikey');
+            const senderEmail = localStorage.getItem('leadgen_email');
+            const senderName = localStorage.getItem('leadgen_name');
+
+            if (!apiKey || !senderEmail) {
+                showResult('send-result', 'Please configure your email in Settings tab first!', false);
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span> Sending...';
@@ -501,14 +681,16 @@
                     throw new Error('Please fill all fields');
                 }
 
-                // Send via direct email endpoint
                 const response = await fetch(`${API_URL}/campaigns/send-email`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         to_email: toEmail,
                         subject: subject,
-                        body: template
+                        body: template,
+                        sender_email: senderEmail,
+                        sender_name: senderName,
+                        api_key: apiKey
                     })
                 });
 
@@ -553,6 +735,7 @@
         }
 
         // Initialize
+        loadSavedSettings();
         loadStats();
         loadAllLeads();
     </script>

@@ -5,11 +5,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from pathlib import Path
+import httpx
 from .openclaw.agent import LeadGenAgent
 from .discovery.manager import DiscoveryManager
 from .enrichment.verifier import EmailVerifier
 from .outreach.campaign import CampaignManager
-from .outreach.sender import EmailSender
 from .response.handler import ResponseHandler
 from .db.connection import async_session
 from .utils.analytics import Analytics
@@ -27,7 +27,6 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 agent = LeadGenAgent()
 discovery = DiscoveryManager()
 verifier = EmailVerifier()
-sender = EmailSender()
 
 
 class FindLeadsRequest(BaseModel):
@@ -48,6 +47,14 @@ class SendEmailRequest(BaseModel):
     to_email: str
     subject: str
     body: str
+    sender_email: Optional[str] = None
+    sender_name: Optional[str] = None
+    api_key: Optional[str] = None
+
+
+class TestEmailRequest(BaseModel):
+    email: str
+    api_key: str
 
 
 class CommandRequest(BaseModel):
@@ -79,7 +86,7 @@ async def find_leads(request: FindLeadsRequest):
         # Add test email for demo purposes
         for lead in leads:
             if not lead.get("email"):
-                lead["email"] = "tara378581@gmail.com"
+                lead["email"] = "test@example.com"
                 lead["verified"] = True
 
         return {
@@ -161,8 +168,16 @@ async def send_campaign(request: CampaignRequest):
 
 @app.post("/campaigns/send-email")
 async def send_email(request: SendEmailRequest):
-    """Send a single email."""
+    """Send a single email using user's own API key."""
     try:
+        # Use user's API key or fall back to default
+        api_key = request.api_key
+        sender_email = request.sender_email
+        sender_name = request.sender_name or "LeadGen User"
+
+        if not api_key or not sender_email:
+            return {"success": False, "error": "Please configure your email in Settings tab"}
+
         # Convert plain text to HTML
         body_html = request.body.replace("\n", "<br>")
         html_content = f"""
@@ -173,16 +188,74 @@ async def send_email(request: SendEmailRequest):
         </html>
         """
 
-        result = await sender.send_email(
-            to_email=request.to_email,
-            subject=request.subject,
-            html_content=html_content,
-            plain_content=request.body
-        )
+        # Send using user's Brevo API key
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.brevo.com/v3/smtp/email",
+                json={
+                    "sender": {
+                        "name": sender_name,
+                        "email": sender_email
+                    },
+                    "to": [{"email": request.to_email}],
+                    "subject": request.subject,
+                    "htmlContent": html_content,
+                    "textContent": request.body
+                },
+                headers={
+                    "api-key": api_key,
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                }
+            )
 
-        return result
+            if response.status_code in [200, 201]:
+                data = response.json()
+                return {
+                    "success": True,
+                    "message_id": data.get("messageId")
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Brevo API error: {response.status_code}"
+                }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/test-email")
+async def test_email(request: TestEmailRequest):
+    """Test email sending with user's API key."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.brevo.com/v3/smtp/email",
+                json={
+                    "sender": {
+                        "name": "LeadGen AI Test",
+                        "email": request.email
+                    },
+                    "to": [{"email": request.email}],
+                    "subject": "Test from LeadGen AI",
+                    "htmlContent": "<h1>Hello!</h1><p>Your email is configured correctly.</p>",
+                    "textContent": "Hello! Your email is configured correctly."
+                },
+                headers={
+                    "api-key": request.api_key,
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                }
+            )
+
+            if response.status_code in [200, 201]:
+                return {"success": True}
+            else:
+                return {"success": False, "error": f"API error: {response.status_code}"}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.post("/command")
